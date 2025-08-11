@@ -240,19 +240,7 @@ try {
                         <li class="nav-item">
                             <a class="nav-link" href="#permohonan">
                                 <i class="fas fa-list"></i>
-                                Kelola Permohonan
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#laporan">
-                                <i class="fas fa-file-alt"></i>
-                                Laporan
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#pengaturan">
-                                <i class="fas fa-cog"></i>
-                                Pengaturan
+                                LogOut
                             </a>
                         </li>
                     </ul>

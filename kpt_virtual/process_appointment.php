@@ -1,5 +1,5 @@
 <?php
-// process_appointment.php
+// process_appointment.php - FIXED VERSION
 // File untuk memproses form permohonan tamu virtual
 
 header('Content-Type: application/json');
@@ -7,10 +7,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
-// Konfigurasi database
+// Konfigurasi database - PASTIKAN SESUAI DENGAN XAMPP ANDA
 $servername = "localhost";
 $username = "root";
-$password = "";
+$password = ""; // Kosong untuk XAMPP default
 $dbname = "ruang_tamu_virtual";
 
 // Response default
@@ -22,7 +22,7 @@ $response = array(
 
 try {
     // Buat koneksi database
-    $conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Cek apakah request method POST
@@ -45,12 +45,12 @@ try {
         throw new Exception('Semua field harus diisi');
     }
     
-    // Validasi format NIP (harus angka, minimal 18 digit)
-    if (!preg_match('/^\d{18}$/', $nip)) {
-        throw new Exception('Format NIP tidak valid (harus 18 digit angka)');
+    // Validasi format NIP (minimal 8 digit, bisa lebih fleksibel)
+    if (!preg_match('/^\d{8,}$/', $nip)) {
+        throw new Exception('Format NIP tidak valid (minimal 8 digit angka)');
     }
     
-    // Validasi format nomor HP
+    // Validasi format nomor HP (lebih fleksibel)
     if (!preg_match('/^(\+?62|62|0)[0-9]{8,13}$/', $nomor_hp)) {
         throw new Exception('Format nomor HP tidak valid');
     }
@@ -107,8 +107,14 @@ try {
         throw new Exception('Anda sudah memiliki permohonan pada tanggal tersebut');
     }
     
-    // Panggil stored procedure untuk create permohonan
-    $stmt = $conn->prepare("CALL CreatePermohonan(?, ?, ?, ?, ?, ?, ?)");
+    // GUNAKAN INSERT BIASA JIKA STORED PROCEDURE BELUM DIBUAT
+    $stmt = $conn->prepare("
+        INSERT INTO permohonan_tamu (
+            nama, jabatan, nip, bertamu_dengan, 
+            tanggal_kunjungan, nomor_hp, keperluan
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    
     $stmt->execute([
         $nama, 
         $jabatan, 
@@ -119,13 +125,23 @@ try {
         $keperluan
     ]);
     
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $permohonan_id = $result['permohonan_id'];
+    $permohonan_id = $conn->lastInsertId();
+    
+    // Log aktivitas secara manual
+    $stmt = $conn->prepare("
+        INSERT INTO activity_log (permohonan_id, action, description) 
+        VALUES (?, 'CREATE', ?)
+    ");
+    $stmt->execute([$permohonan_id, 'Permohonan dibuat oleh ' . $nama]);
     
     // Ambil detail pejabat untuk response
     $stmt = $conn->prepare("SELECT nama, jabatan_lengkap FROM pejabat WHERE kode = ?");
     $stmt->execute([$bertamu_dengan]);
     $pejabat_info = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$pejabat_info) {
+        throw new Exception('Data pejabat tidak ditemukan');
+    }
     
     // Format tanggal untuk response
     $tanggal_formatted = date('l, d F Y', strtotime($tanggal));
@@ -168,7 +184,7 @@ try {
         'status' => 'pending'
     ];
     
-    // Optional: Kirim notifikasi email ke admin
+    // Kirim notifikasi email ke admin (opsional)
     sendEmailNotification($response['data']);
     
 } catch (PDOException $e) {
@@ -184,70 +200,12 @@ try {
 // Kirim response dalam format JSON
 echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
-// Fungsi untuk generate pesan WhatsApp otomatis
-function generateWhatsAppMessage($data) {
-    $message = "Hi Ini adalah pesan otomatis Aplikasi Sistem Pembinaan Tenaga Teknis (SIGANIS),\n\n";
-    $message .= "Berikut adalah detil informasi untuk anda:\n\n";
-    $message .= "Kepada Yth:\n";
-    $message .= $data['nama'] . "\n\n";
-    $message .= "Layanan\n";
-    $message .= "Ruang Tamu Virtual Ditbinganis\n\n";
-    $message .= "Permohonan tamu virtual a.n. " . $data['nama'] . " telah diterima Aplikasi SIGANIS.\n\n";
-    $message .= "Hari/Tanggal : " . $data['tanggal_kunjungan'] . "\n";
-    $message .= "Waktu : 09:30 - 09:45 WIB\n";
-    $message .= "Perihal : " . $data['keperluan'] . "\n\n";
-    $message .= "Penamaan Akun Zoom Saat Pertemuan Wajib : " . $data['nama'] . "\n\n";
-    $message .= "Jika penamaan akun zoom saat pertemuan tidak sesuai di atas maka tidak akan diterima\n\n";
-    $message .= "Permohonan anda akan diproses dan selanjutnya diinformasikan via WhatsApp pada nomor yang terdaftar pada Aplikasi SIKEP Mahkamah Agung RI";
-    
-    return $message;
-}
-
 // Fungsi untuk kirim notifikasi email ke admin
 function sendEmailNotification($data) {
-    // Implementasi pengiriman email ke admin
-    $to = "admin@pta-padang.go.id"; // Email admin
-    $subject = "🔔 PERMOHONAN TAMU VIRTUAL BARU - " . $data['nama'];
+    // Log notifikasi (bisa dihapus jika tidak diperlukan)
+    error_log('Permohonan baru: ' . $data['nama'] . ' - ID: ' . $data['permohonan_id']);
     
-    $body = "Ada permohonan tamu virtual baru yang perlu diproses:\n\n";
-    $body .= "DETAIL PERMOHONAN:\n";
-    $body .= "==================\n";
-    $body .= "ID Permohonan: #" . $data['permohonan_id'] . "\n";
-    $body .= "Nama: " . $data['nama'] . "\n";
-    $body .= "Jabatan: " . $data['jabatan'] . "\n";
-    $body .= "NIP: " . $data['nip'] . "\n";
-    $body .= "Bertamu dengan: " . $data['pejabat_tujuan'] . "\n";
-    $body .= "Tanggal: " . $data['tanggal_kunjungan'] . "\n";
-    $body .= "No HP: " . $data['nomor_hp'] . "\n";
-    $body .= "Keperluan: " . $data['keperluan'] . "\n\n";
-    $body .= "ACTION REQUIRED:\n";
-    $body .= "Silakan login ke sistem admin untuk memproses permohonan ini.\n";
-    $body .= "Link: " . $_SERVER['HTTP_HOST'] . "/admin_dashboard.php\n\n";
-    $body .= "Setelah diproses, kirimkan pesan otomatis SIGANIS kepada pemohon melalui WhatsApp.";
-    
-    $headers = "From: noreply@pta-padang.go.id\r\n";
-    $headers .= "Reply-To: admin@pta-padang.go.id\r\n";
-    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
-    
-    // Uncomment untuk mengirim email
-    // mail($to, $subject, $body, $headers);
-}
-
-// Fungsi untuk validasi tambahan (jika diperlukan)
-function validateBusinessRules($data) {
-    // Contoh: Validasi hari kerja (Senin-Jumat)
-    $dayOfWeek = date('N', strtotime($data['tanggal'])); // 1=Monday, 7=Sunday
-    if ($dayOfWeek > 5) {
-        throw new Exception('Pertemuan hanya dapat dijadwalkan pada hari kerja (Senin-Jumat)');
-    }
-    
-    // Contoh: Validasi jam kerja
-    $hour = (int) date('H');
-    if ($hour < 8 || $hour > 16) {
-        // Jika pengajuan di luar jam kerja, berikan peringatan
-        // (tidak menghentikan proses, hanya informasi)
-    }
-    
-    return true;
+    // Implementasi email bisa ditambahkan di sini
+    // Untuk sementara, bisa diabaikan jika tidak diperlukan
 }
 ?>
