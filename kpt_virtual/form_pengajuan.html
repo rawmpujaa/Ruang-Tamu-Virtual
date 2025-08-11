@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Tamu Virtual - Pengadilan Tinggi Padang</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo-section">
+                <i class="fas fa-balance-scale"></i>
+                <h1>Ruang Tamu Virtual</h1>
+                <p>Pengadilan Tinggi Padang</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="welcome-section">
+                <h2>Selamat Datang di Layanan Ruang Tamu Virtual</h2>
+                <p>Silakan isi formulir di bawah ini untuk membuat janji bertemu dengan pimpinan Pengadilan Tinggi Padang</p>
+            </div>
+
+            <div class="form-container">
+                <form id="appointmentForm" method="POST" action="process_appointment.php">
+                    <div class="form-group">
+                        <label for="nama">
+                            <i class="fas fa-user"></i>
+                            Nama Lengkap
+                        </label>
+                        <input type="text" id="nama" name="nama" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="jabatan">
+                            <i class="fas fa-briefcase"></i>
+                            Jabatan
+                        </label>
+                        <input type="text" id="jabatan" name="jabatan" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nip">
+                            <i class="fas fa-id-card"></i>
+                            NIP
+                        </label>
+                        <input type="text" id="nip" name="nip" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bertamu_dengan">
+                            <i class="fas fa-user-tie"></i>
+                            Bertamu Dengan
+                        </label>
+                        <select id="bertamu_dengan" name="bertamu_dengan" required>
+                            <option value="">-- Pilih Pejabat --</option>
+                            <option value="Kpt">Ketua Pengadilan Tinggi (KPT)</option>
+                            <option value="Wkpt">Wakil Ketua Pengadilan Tinggi (WKPT)</option>
+                            <option value="Panitera">Panitera</option>
+                            <option value="Sekretaris">Sekretaris</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tanggal">
+                            <i class="fas fa-calendar"></i>
+                            Pilih Tanggal
+                        </label>
+                        <input type="date" id="tanggal" name="tanggal" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="nomor_hp">
+                            <i class="fas fa-phone"></i>
+                            Nomor HP (WhatsApp)
+                        </label>
+                        <input type="tel" id="nomor_hp" name="nomor_hp" placeholder="contoh: 08123456789" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="keperluan">
+                            <i class="fas fa-clipboard"></i>
+                            Keperluan
+                        </label>
+                        <textarea id="keperluan" name="keperluan" rows="4" placeholder="Jelaskan keperluan Anda..." required></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            Ajukan Permohonan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 Pengadilan Tinggi Padang. All rights reserved.</p>
+            <p>Sistem Pembinaan Tenaga Teknis (SIGANIS)</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
